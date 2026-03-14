@@ -3,7 +3,7 @@ import { buildCharacter } from '../objects/CharacterMesh'
 import {
   createStar, createTree, createFlower, createCastle,
   createRollerCoaster, createCarousel, createGround,
-  createBalloons, toonMat,
+  createBalloons, toonMat, makeStoneTex, makeWoodTex,
 } from '../objects/WorldObjects'
 
 // Star positions outside the castle
@@ -52,8 +52,20 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
   shadowGen.useBlurExponentialShadowMap = true
   shadowGen.blurScale = 2
 
-  // ── Ground ──
-  createGround(scene)
+  // ── Ground (grass + textured stone path) ──
+  const groundMesh = createGround(scene)
+
+  // Overlay a textured stone path on top of the plain ground
+  const pathMat = new BABYLON.StandardMaterial('path_mat', scene)
+  pathMat.diffuseTexture = makeStoneTex(scene, '#C8B89A')
+  pathMat.diffuseTexture.uScale = 4
+  pathMat.diffuseTexture.vScale = 20
+  pathMat.emissiveColor = new BABYLON.Color3(0.06, 0.05, 0.04)
+  pathMat.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1)
+  const path = BABYLON.MeshBuilder.CreateBox('path_surface', { width: 5, height: 0.04, depth: 60 }, scene)
+  path.position.set(0, 0.02, 5)
+  path.material = pathMat
+  path.receiveShadows = true
 
   // ── Castle (far end) ──
   const { root: castleRoot } = createCastle(scene)
@@ -121,16 +133,20 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
     }
   }
 
-  // ── Character ──
-  const character = buildCharacter(characterKey, scene)
-  character.root.position.set(0, 0, 30)
-  character.meshes.forEach(m => shadowGen.addShadowCaster(m))
+  // ── Character (async GLTF — scene renders immediately, character appears when loaded) ──
+  let character = null
+  buildCharacter(characterKey, scene).then(char => {
+    character = char
+    char.root.position.set(0, 0, 30)
+    char.root.rotation.y = Math.PI
+    char.meshes.forEach(m => shadowGen.addShadowCaster(m))
+  })
 
-  // ── Camera ── lower angle for real 3D depth
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(9, 11, 45), scene)
-  camera.setTarget(new BABYLON.Vector3(0, 1, 30))
+  // ── Camera — theatrical stage view (directly in front, eye level) ──
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 4.5, 46), scene)
+  camera.setTarget(new BABYLON.Vector3(0, 2, 30))
   camera.minZ = 0.1
-  camera.fov = 1.0
+  camera.fov = 0.9
 
   // ── Glow layer (emissive meshes bloom) ──
   const glow = new BABYLON.GlowLayer('glow', scene)
@@ -190,6 +206,8 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
   let nearDoor = false
 
   scene.registerBeforeRender(() => {
+    if (!character) return   // wait for GLTF to load
+
     const dt = scene.getEngine().getDeltaTime() / 1000
     const pos = character.root.position
 
@@ -214,11 +232,11 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
     // Clamp to ground
     pos.y = 0
 
-    // Camera follow — low angle for perspective depth
-    const ISO_OFFSET = new BABYLON.Vector3(9, 11, 15)
-    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.06)
+    // Theatrical stage camera — in front of character at eye level
+    const STAGE_OFFSET = new BABYLON.Vector3(0, 4.5, 16)
+    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(STAGE_OFFSET), 0.06)
     camera.setTarget(BABYLON.Vector3.Lerp(
-      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
+      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 2, 0)), 0.1
     ))
 
     // Star collection
@@ -260,11 +278,11 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
     },
 
     startCoasterRide(onDone) {
-      coaster.playRide(character, camera, onDone)
+      if (character) coaster.playRide(character, camera, onDone)
     },
 
     startCarouselRide(onDone) {
-      carousel.playRide(character, onDone)
+      if (character) carousel.playRide(character, onDone)
     },
 
     dispose() {

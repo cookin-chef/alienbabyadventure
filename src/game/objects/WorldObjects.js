@@ -4,6 +4,132 @@
  */
 import * as BABYLON from '@babylonjs/core'
 
+// ── Procedural texture helpers ───────────────────────────────────────────────
+
+/** Warm oak wood with horizontal grain lines and occasional knots. */
+export function makeWoodTex(scene, baseHex = '#7B4F2A') {
+  const tex = new BABYLON.DynamicTexture('wood_' + Math.random(), { width: 256, height: 256 }, scene, false)
+  const ctx = tex.getContext()
+  ctx.fillStyle = baseHex
+  ctx.fillRect(0, 0, 256, 256)
+
+  // Grain lines
+  const darken = shadeHex(baseHex, -30)
+  ctx.strokeStyle = darken
+  for (let i = 0; i < 22; i++) {
+    const y0 = (i / 22) * 256 + (Math.random() - 0.5) * 8
+    ctx.lineWidth = 0.5 + Math.random() * 1.5
+    ctx.beginPath()
+    ctx.moveTo(0, y0)
+    for (let x = 0; x <= 256; x += 8) {
+      ctx.lineTo(x, y0 + Math.sin(x * 0.04) * 4 + (Math.random() - 0.5) * 2)
+    }
+    ctx.stroke()
+  }
+
+  // Knots
+  for (let i = 0; i < 3; i++) {
+    const kx = 20 + Math.random() * 216
+    const ky = 20 + Math.random() * 216
+    ctx.strokeStyle = shadeHex(baseHex, -50)
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.ellipse(kx, ky, 12 + Math.random() * 8, 6 + Math.random() * 4, Math.random() * Math.PI, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+
+  tex.update()
+  return tex
+}
+
+/** Stone surface with noise variation and hairline cracks. */
+export function makeStoneTex(scene, baseHex = '#888888') {
+  const tex = new BABYLON.DynamicTexture('stone_' + Math.random(), { width: 256, height: 256 }, scene, false)
+  const ctx = tex.getContext()
+  ctx.fillStyle = baseHex
+  ctx.fillRect(0, 0, 256, 256)
+
+  // Noise patches
+  const base = hexToRgb(baseHex)
+  for (let i = 0; i < 900; i++) {
+    const x = Math.random() * 256
+    const y = Math.random() * 256
+    const v = Math.floor(Math.random() * 38) - 19
+    const r = clamp(base.r + v, 0, 255)
+    const g = clamp(base.g + v - 3, 0, 255)
+    const b = clamp(base.b + v + 4, 0, 255)
+    ctx.fillStyle = `rgb(${r},${g},${b})`
+    ctx.fillRect(x, y, 3 + Math.random() * 5, 3 + Math.random() * 5)
+  }
+
+  // Hairline cracks
+  for (let i = 0; i < 10; i++) {
+    ctx.strokeStyle = `rgba(0,0,0,0.12)`
+    ctx.lineWidth = 0.5
+    ctx.beginPath()
+    let cx = Math.random() * 256
+    let cy = Math.random() * 256
+    ctx.moveTo(cx, cy)
+    for (let j = 0; j < 4; j++) {
+      cx += (Math.random() - 0.5) * 36
+      cy += (Math.random() - 0.5) * 24
+      ctx.lineTo(cx, cy)
+    }
+    ctx.stroke()
+  }
+
+  tex.update()
+  return tex
+}
+
+/** Woven fabric with subtle diagonal weave pattern. */
+export function makeFabricTex(scene, baseHex = '#9C27B0') {
+  const tex = new BABYLON.DynamicTexture('fabric_' + Math.random(), { width: 128, height: 128 }, scene, false)
+  const ctx = tex.getContext()
+  ctx.fillStyle = baseHex
+  ctx.fillRect(0, 0, 128, 128)
+
+  const light = shadeHex(baseHex, 20)
+  const dark  = shadeHex(baseHex, -20)
+  const step  = 6
+  for (let i = 0; i < 128 / step; i++) {
+    ctx.strokeStyle = i % 2 === 0 ? light : dark
+    ctx.lineWidth = step * 0.45
+    ctx.beginPath()
+    ctx.moveTo(i * step, 0)
+    ctx.lineTo(i * step + 128, 128)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(i * step, 0)
+    ctx.lineTo(i * step - 128, 128)
+    ctx.stroke()
+  }
+
+  tex.update()
+  return tex
+}
+
+// ── Colour utilities (used by texture helpers) ───────────────────────────────
+
+function hexToRgb(hex) {
+  const h = hex.replace('#', '')
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  }
+}
+
+function shadeHex(hex, amount) {
+  const { r, g, b } = hexToRgb(hex)
+  const rr = clamp(r + amount, 0, 255).toString(16).padStart(2, '0')
+  const gg = clamp(g + amount, 0, 255).toString(16).padStart(2, '0')
+  const bb = clamp(b + amount, 0, 255).toString(16).padStart(2, '0')
+  return `#${rr}${gg}${bb}`
+}
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)) }
+
 // ── Material helper ─────────────────────────────────────────────────────────
 
 export function toonMat(name, hex, scene, opts = {}) {
