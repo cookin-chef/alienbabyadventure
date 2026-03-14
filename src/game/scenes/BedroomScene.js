@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core'
 import { buildCharacter } from '../objects/CharacterMesh'
-import { createStar, toonMat } from '../objects/WorldObjects'
+import { createStar, toonMat, makeFabricTex, makeStoneTex } from '../objects/WorldObjects'
 
 // 3 stars in the bedroom
 const BEDROOM_STARS = [
@@ -30,10 +30,30 @@ export function createBedroomScene(engine, characterKey, callbacks) {
   diamondLight.range = 15
 
   // ── Room geometry ──
-  const floorMat = toonMat('bed_floor', '#9C27B0', scene, { emissive: 0.08 })
-  const wallMat  = toonMat('bed_wall', '#4A148C', scene, { emissive: 0.08 })
+  // Textured materials — stone floor, fabric carpet, dark stone walls
+  const floorMat = new BABYLON.StandardMaterial('bed_floor', scene)
+  floorMat.diffuseTexture = makeStoneTex(scene, '#4A1A6E')
+  floorMat.diffuseTexture.uScale = 4
+  floorMat.diffuseTexture.vScale = 4
+  floorMat.emissiveColor = new BABYLON.Color3(0.06, 0.02, 0.09)
+  floorMat.specularColor = new BABYLON.Color3(0.12, 0.05, 0.18)
+  floorMat.specularPower = 48
+
+  const wallMat = new BABYLON.StandardMaterial('bed_wall', scene)
+  wallMat.diffuseTexture = makeStoneTex(scene, '#2A0A50')
+  wallMat.diffuseTexture.uScale = 3
+  wallMat.diffuseTexture.vScale = 3
+  wallMat.emissiveColor = new BABYLON.Color3(0.04, 0.01, 0.07)
+  wallMat.specularColor = new BABYLON.Color3(0.06, 0.02, 0.1)
+
   const ceilMat  = toonMat('bed_ceil', '#1A0050', scene, { emissive: 0.1 })
-  const carpetMat = toonMat('bed_carpet', '#CE93D8', scene, { emissive: 0.12 })
+
+  const carpetMat = new BABYLON.StandardMaterial('bed_carpet', scene)
+  carpetMat.diffuseTexture = makeFabricTex(scene, '#CE93D8')
+  carpetMat.diffuseTexture.uScale = 3
+  carpetMat.diffuseTexture.vScale = 3
+  carpetMat.emissiveColor = new BABYLON.Color3(0.1, 0.04, 0.12)
+  carpetMat.specularColor = new BABYLON.Color3(0.04, 0.02, 0.06)
 
   // Floor
   const floor = BABYLON.MeshBuilder.CreateBox('bed_floor', { width: 14, height: 0.3, depth: 14 }, scene)
@@ -225,16 +245,19 @@ export function createBedroomScene(engine, characterKey, callbacks) {
     halo.scaling.setAll(1 + Math.sin(diamondT * 2) * 0.08)
   })
 
-  // ── Character ──
-  const character = buildCharacter(characterKey, scene)
-  character.root.position.set(0, 0, 5)
-  character.root.rotation.y = Math.PI
+  // ── Character (async GLTF) ──
+  let character = null
+  buildCharacter(characterKey, scene).then(char => {
+    character = char
+    char.root.position.set(0, 0, 5)
+    char.root.rotation.y = Math.PI
+  })
 
-  // ── Camera ── low angle for real 3D depth
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(8, 10, 15), scene)
-  camera.setTarget(new BABYLON.Vector3(0, 1, 5))
+  // ── Camera — theatrical stage view ──
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 4.5, 17), scene)
+  camera.setTarget(new BABYLON.Vector3(0, 2, 5))
   camera.minZ = 0.1
-  camera.fov = 1.0
+  camera.fov = 0.9
 
   // ── Glow layer — high intensity for magical diamond room ──
   const glow = new BABYLON.GlowLayer('glow', scene)
@@ -291,6 +314,8 @@ export function createBedroomScene(engine, characterKey, callbacks) {
   const SPEED = 5
 
   scene.registerBeforeRender(() => {
+    if (!character) return   // wait for GLTF
+
     const dt = scene.getEngine().getDeltaTime() / 1000
     const pos = character.root.position
 
@@ -311,11 +336,11 @@ export function createBedroomScene(engine, characterKey, callbacks) {
     }
     pos.y = 0
 
-    // Camera follow — low angle for perspective depth
-    const ISO_OFFSET = new BABYLON.Vector3(8, 10, 10)
-    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.07)
+    // Theatrical stage camera
+    const STAGE_OFFSET = new BABYLON.Vector3(0, 4.5, 12)
+    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(STAGE_OFFSET), 0.07)
     camera.setTarget(BABYLON.Vector3.Lerp(
-      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
+      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 2, 0)), 0.1
     ))
 
     // Star collection

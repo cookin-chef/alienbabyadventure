@@ -1,6 +1,6 @@
 import * as BABYLON from '@babylonjs/core'
 import { buildCharacter } from '../objects/CharacterMesh'
-import { createStar, toonMat } from '../objects/WorldObjects'
+import { createStar, toonMat, makeStoneTex, makeFabricTex } from '../objects/WorldObjects'
 
 // 5 stars inside the castle hallway
 const CASTLE_STARS = [
@@ -45,10 +45,30 @@ export function createCastleScene(engine, characterKey, callbacks) {
   })
 
   // ── Hallway geometry ──
-  const wallMat  = toonMat('hall_wall', '#3E2723', scene, { emissive: 0.08 })
-  const floorMat = toonMat('hall_floor', '#FAFAFA', scene, { emissive: 0.06 })
+  // Textured materials — stone floor, dark stone walls, woven carpet
+  const floorMat = new BABYLON.StandardMaterial('hall_floor', scene)
+  floorMat.diffuseTexture = makeStoneTex(scene, '#D4C9B0')
+  floorMat.diffuseTexture.uScale = 3
+  floorMat.diffuseTexture.vScale = 8
+  floorMat.emissiveColor = new BABYLON.Color3(0.05, 0.04, 0.03)
+  floorMat.specularColor = new BABYLON.Color3(0.15, 0.15, 0.12)
+  floorMat.specularPower = 32
+
+  const wallMat = new BABYLON.StandardMaterial('hall_wall', scene)
+  wallMat.diffuseTexture = makeStoneTex(scene, '#2E1A0F')
+  wallMat.diffuseTexture.uScale = 2
+  wallMat.diffuseTexture.vScale = 4
+  wallMat.emissiveColor = new BABYLON.Color3(0.04, 0.02, 0.01)
+  wallMat.specularColor = new BABYLON.Color3(0.06, 0.04, 0.04)
+
   const ceilMat  = toonMat('hall_ceil', '#4A148C', scene, { emissive: 0.12 })
-  const carpetMat = toonMat('carpet', '#B71C1C', scene, { emissive: 0.1 })
+
+  const carpetMat = new BABYLON.StandardMaterial('carpet', scene)
+  carpetMat.diffuseTexture = makeFabricTex(scene, '#B71C1C')
+  carpetMat.diffuseTexture.uScale = 2
+  carpetMat.diffuseTexture.vScale = 10
+  carpetMat.emissiveColor = new BABYLON.Color3(0.1, 0.01, 0.01)
+  carpetMat.specularColor = new BABYLON.Color3(0.04, 0.02, 0.02)
   const colMat   = toonMat('column', '#F5F5DC', scene, { emissive: 0.1 })
   const doorMat  = toonMat('bed_door', '#6A1B9A', scene, { emissive: 0.25 })
 
@@ -175,16 +195,19 @@ export function createCastleScene(engine, characterKey, callbacks) {
     doorGlow.intensity = 0.8 + Math.sin(doorGlowT * 2) * 0.3
   })
 
-  // ── Character ──
-  const character = buildCharacter(characterKey, scene)
-  character.root.position.set(0, 0, 7)
-  character.root.rotation.y = Math.PI // face into hallway
+  // ── Character (async GLTF) ──
+  let character = null
+  buildCharacter(characterKey, scene).then(char => {
+    character = char
+    char.root.position.set(0, 0, 7)
+    char.root.rotation.y = Math.PI
+  })
 
-  // ── Camera ── low angle for depth
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(9, 12, 19), scene)
-  camera.setTarget(new BABYLON.Vector3(0, 1, 7))
+  // ── Camera — theatrical stage view ──
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 4.5, 21), scene)
+  camera.setTarget(new BABYLON.Vector3(0, 2, 7))
   camera.minZ = 0.1
-  camera.fov = 1.0
+  camera.fov = 0.9
 
   // ── Glow layer — warm torch glow ──
   const glow = new BABYLON.GlowLayer('glow', scene)
@@ -244,6 +267,8 @@ export function createCastleScene(engine, characterKey, callbacks) {
   let nearBedroom = false
 
   scene.registerBeforeRender(() => {
+    if (!character) return   // wait for GLTF
+
     const dt = scene.getEngine().getDeltaTime() / 1000
     const pos = character.root.position
 
@@ -265,11 +290,11 @@ export function createCastleScene(engine, characterKey, callbacks) {
     }
     pos.y = 0
 
-    // Camera follow — low angle for perspective depth
-    const ISO_OFFSET = new BABYLON.Vector3(9, 12, 12)
-    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.07)
+    // Theatrical stage camera
+    const STAGE_OFFSET = new BABYLON.Vector3(0, 4.5, 14)
+    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(STAGE_OFFSET), 0.07)
     camera.setTarget(BABYLON.Vector3.Lerp(
-      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
+      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 2, 0)), 0.1
     ))
 
     // Star collection
