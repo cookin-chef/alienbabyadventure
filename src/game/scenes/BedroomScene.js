@@ -230,11 +230,44 @@ export function createBedroomScene(engine, characterKey, callbacks) {
   character.root.position.set(0, 0, 5)
   character.root.rotation.y = Math.PI
 
-  // ── Camera ──
-  // Start at isometric offset from character start pos (0, 0, 5)
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(10, 15, 15), scene)
+  // ── Camera ── low angle for real 3D depth
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(8, 10, 15), scene)
   camera.setTarget(new BABYLON.Vector3(0, 1, 5))
   camera.minZ = 0.1
+  camera.fov = 1.0
+
+  // ── Glow layer — high intensity for magical diamond room ──
+  const glow = new BABYLON.GlowLayer('glow', scene)
+  glow.intensity = 1.0
+
+  // ── Post-processing: bloom + MSAA ──
+  const pipeline = new BABYLON.DefaultRenderingPipeline('pipeline', true, scene, [camera])
+  pipeline.samples = 4
+  pipeline.bloomEnabled = true
+  pipeline.bloomThreshold = 0.6
+  pipeline.bloomWeight = 0.6
+  pipeline.bloomKernel = 64
+  pipeline.bloomScale = 0.5
+
+  // ── Moonlight mote particles drifting in from window ──
+  const PARTICLE_TEX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAG0lEQVQoU2NkYGD4z8BAAoxqIKaBUQ2kBgIABbYAAfJFuNoAAAAASUVORK5CYII='
+  const motes = new BABYLON.ParticleSystem('motes', 40, scene)
+  motes.particleTexture = new BABYLON.Texture(PARTICLE_TEX, scene)
+  motes.emitter = new BABYLON.Vector3(0, 4, -7)
+  motes.minEmitBox = new BABYLON.Vector3(-1.5, -1.5, 0)
+  motes.maxEmitBox = new BABYLON.Vector3(1.5, 1.5, 0)
+  motes.color1 = new BABYLON.Color4(0.8, 0.95, 1, 0.6)
+  motes.color2 = new BABYLON.Color4(0.95, 0.98, 1, 0.4)
+  motes.colorDead = new BABYLON.Color4(1, 1, 1, 0)
+  motes.minSize = 0.04
+  motes.maxSize = 0.12
+  motes.minLifeTime = 5
+  motes.maxLifeTime = 10
+  motes.emitRate = 6
+  motes.direction1 = new BABYLON.Vector3(-0.5, 0.5, 1)
+  motes.direction2 = new BABYLON.Vector3(0.5, 1.5, 2)
+  motes.gravity = new BABYLON.Vector3(0, 0.05, 0)
+  motes.start()
 
   // ── Stars ──
   const stars = BEDROOM_STARS.map((pos, i) =>
@@ -278,8 +311,8 @@ export function createBedroomScene(engine, characterKey, callbacks) {
     }
     pos.y = 0
 
-    // Camera follow (isometric fixed angle)
-    const ISO_OFFSET = new BABYLON.Vector3(10, 15, 10)
+    // Camera follow — low angle for perspective depth
+    const ISO_OFFSET = new BABYLON.Vector3(8, 10, 10)
     camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.07)
     camera.setTarget(BABYLON.Vector3.Lerp(
       camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
