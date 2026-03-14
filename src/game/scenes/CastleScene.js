@@ -181,8 +181,9 @@ export function createCastleScene(engine, characterKey, callbacks) {
   character.root.rotation.y = Math.PI // face into hallway
 
   // ── Camera ──
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 6, 14), scene)
-  camera.setTarget(new BABYLON.Vector3(0, 1, 5))
+  // Start at isometric offset from character start pos (0, 0, 7)
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(12, 18, 19), scene)
+  camera.setTarget(new BABYLON.Vector3(0, 1, 7))
   camera.minZ = 0.1
 
   // ── Stars ──
@@ -231,15 +232,11 @@ export function createCastleScene(engine, characterKey, callbacks) {
     }
     pos.y = 0
 
-    // Camera follow
-    const behind = new BABYLON.Vector3(
-      pos.x - Math.sin(character.root.rotation.y) * 9,
-      pos.y + 6,
-      pos.z - Math.cos(character.root.rotation.y) * 9
-    )
-    camera.position = BABYLON.Vector3.Lerp(camera.position, behind, 0.07)
+    // Camera follow (isometric fixed angle)
+    const ISO_OFFSET = new BABYLON.Vector3(12, 18, 12)
+    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.07)
     camera.setTarget(BABYLON.Vector3.Lerp(
-      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1.5, 0)), 0.1
+      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
     ))
 
     // Star collection
