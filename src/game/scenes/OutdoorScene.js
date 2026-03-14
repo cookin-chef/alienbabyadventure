@@ -110,8 +110,9 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
   character.meshes.forEach(m => shadowGen.addShadowCaster(m))
 
   // ── Camera ──
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 8, 38), scene)
-  camera.setTarget(new BABYLON.Vector3(0, 1, 28))
+  // Start at isometric offset from character start pos (0, 0, 30)
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(14, 20, 44), scene)
+  camera.setTarget(new BABYLON.Vector3(0, 1, 30))
   camera.minZ = 0.1
 
   // ── Stars ──
@@ -163,15 +164,11 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
     // Clamp to ground
     pos.y = 0
 
-    // Camera follow (smooth third-person)
-    const behind = new BABYLON.Vector3(
-      pos.x - Math.sin(character.root.rotation.y) * 10,
-      pos.y + 7,
-      pos.z - Math.cos(character.root.rotation.y) * 10
-    )
-    camera.position = BABYLON.Vector3.Lerp(camera.position, behind, 0.06)
+    // Camera follow (isometric fixed angle)
+    const ISO_OFFSET = new BABYLON.Vector3(14, 20, 14)
+    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.06)
     camera.setTarget(BABYLON.Vector3.Lerp(
-      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1.5, 0)), 0.1
+      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
     ))
 
     // Star collection

@@ -231,8 +231,9 @@ export function createBedroomScene(engine, characterKey, callbacks) {
   character.root.rotation.y = Math.PI
 
   // ── Camera ──
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(0, 6, 12), scene)
-  camera.setTarget(new BABYLON.Vector3(0, 1.5, 3))
+  // Start at isometric offset from character start pos (0, 0, 5)
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(10, 15, 15), scene)
+  camera.setTarget(new BABYLON.Vector3(0, 1, 5))
   camera.minZ = 0.1
 
   // ── Stars ──
@@ -277,15 +278,11 @@ export function createBedroomScene(engine, characterKey, callbacks) {
     }
     pos.y = 0
 
-    // Camera follow
-    const behind = new BABYLON.Vector3(
-      pos.x - Math.sin(character.root.rotation.y) * 8,
-      pos.y + 5.5,
-      pos.z - Math.cos(character.root.rotation.y) * 8
-    )
-    camera.position = BABYLON.Vector3.Lerp(camera.position, behind, 0.07)
+    // Camera follow (isometric fixed angle)
+    const ISO_OFFSET = new BABYLON.Vector3(10, 15, 10)
+    camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.07)
     camera.setTarget(BABYLON.Vector3.Lerp(
-      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1.5, 0)), 0.1
+      camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
     ))
 
     // Star collection
