@@ -20,7 +20,23 @@ const OUTDOOR_STARS = [
 
 export function createOutdoorScene(engine, characterKey, callbacks) {
   const scene = new BABYLON.Scene(engine)
-  scene.clearColor = new BABYLON.Color4(0.53, 0.81, 0.98, 1) // sky blue
+  scene.clearColor = new BABYLON.Color4(0.38, 0.68, 0.95, 1) // deep sky blue
+
+  // ── Atmospheric fog ──
+  scene.fogMode = BABYLON.Scene.FOGMODE_EXP
+  scene.fogDensity = 0.006
+  scene.fogColor = new BABYLON.Color3(0.82, 0.91, 0.99)
+
+  // ── Sky dome ──
+  const skyDome = BABYLON.MeshBuilder.CreateSphere('skyDome', {
+    diameter: 300, sideOrientation: BABYLON.Mesh.BACKSIDE, segments: 8,
+  }, scene)
+  skyDome.isPickable = false
+  const skyMat = new BABYLON.StandardMaterial('skyMat', scene)
+  skyMat.emissiveColor = new BABYLON.Color3(0.42, 0.72, 0.96)
+  skyMat.disableLighting = true
+  skyMat.backFaceCulling = false
+  skyDome.material = skyMat
 
   // ── Lighting ──
   const hemi = new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0, 1, 0), scene)
@@ -28,12 +44,13 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
   hemi.groundColor = new BABYLON.Color3(0.3, 0.5, 0.3)
 
   const sun = new BABYLON.DirectionalLight('sun', new BABYLON.Vector3(-1, -2, -1), scene)
-  sun.intensity = 0.7
+  sun.intensity = 0.9
   sun.position = new BABYLON.Vector3(30, 40, 30)
 
-  // Shadow generator
-  const shadowGen = new BABYLON.ShadowGenerator(512, sun)
+  // Shadow generator — higher res for sharper shadows
+  const shadowGen = new BABYLON.ShadowGenerator(1024, sun)
   shadowGen.useBlurExponentialShadowMap = true
+  shadowGen.blurScale = 2
 
   // ── Ground ──
   createGround(scene)
@@ -109,11 +126,44 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
   character.root.position.set(0, 0, 30)
   character.meshes.forEach(m => shadowGen.addShadowCaster(m))
 
-  // ── Camera ──
-  // Start at isometric offset from character start pos (0, 0, 30)
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(14, 20, 44), scene)
+  // ── Camera ── lower angle for real 3D depth
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(9, 11, 45), scene)
   camera.setTarget(new BABYLON.Vector3(0, 1, 30))
   camera.minZ = 0.1
+  camera.fov = 1.0
+
+  // ── Glow layer (emissive meshes bloom) ──
+  const glow = new BABYLON.GlowLayer('glow', scene)
+  glow.intensity = 0.55
+
+  // ── Post-processing: bloom + MSAA ──
+  const pipeline = new BABYLON.DefaultRenderingPipeline('pipeline', true, scene, [camera])
+  pipeline.samples = 4
+  pipeline.bloomEnabled = true
+  pipeline.bloomThreshold = 0.78
+  pipeline.bloomWeight = 0.35
+  pipeline.bloomKernel = 64
+  pipeline.bloomScale = 0.5
+
+  // ── Ambient sparkle particles (floating dust / magic motes) ──
+  const PARTICLE_TEX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAG0lEQVQoU2NkYGD4z8BAAoxqIKaBUQ2kBgIABbYAAfJFuNoAAAAASUVORK5CYII='
+  const sparkles = new BABYLON.ParticleSystem('sparkles', 100, scene)
+  sparkles.particleTexture = new BABYLON.Texture(PARTICLE_TEX, scene)
+  sparkles.emitter = new BABYLON.Vector3(0, 1, 5)
+  sparkles.minEmitBox = new BABYLON.Vector3(-22, 0, -25)
+  sparkles.maxEmitBox = new BABYLON.Vector3(22, 5, 35)
+  sparkles.color1 = new BABYLON.Color4(1, 0.98, 0.7, 0.7)
+  sparkles.color2 = new BABYLON.Color4(0.85, 0.97, 1, 0.5)
+  sparkles.colorDead = new BABYLON.Color4(1, 1, 1, 0)
+  sparkles.minSize = 0.05
+  sparkles.maxSize = 0.18
+  sparkles.minLifeTime = 5
+  sparkles.maxLifeTime = 9
+  sparkles.emitRate = 14
+  sparkles.direction1 = new BABYLON.Vector3(-0.2, 1, -0.2)
+  sparkles.direction2 = new BABYLON.Vector3(0.2, 2.5, 0.2)
+  sparkles.gravity = new BABYLON.Vector3(0, -0.06, 0)
+  sparkles.start()
 
   // ── Stars ──
   const stars = OUTDOOR_STARS.map((pos, i) =>
@@ -164,8 +214,8 @@ export function createOutdoorScene(engine, characterKey, callbacks) {
     // Clamp to ground
     pos.y = 0
 
-    // Camera follow (isometric fixed angle)
-    const ISO_OFFSET = new BABYLON.Vector3(14, 20, 14)
+    // Camera follow — low angle for perspective depth
+    const ISO_OFFSET = new BABYLON.Vector3(9, 11, 15)
     camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.06)
     camera.setTarget(BABYLON.Vector3.Lerp(
       camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1

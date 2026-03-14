@@ -180,11 +180,44 @@ export function createCastleScene(engine, characterKey, callbacks) {
   character.root.position.set(0, 0, 7)
   character.root.rotation.y = Math.PI // face into hallway
 
-  // ── Camera ──
-  // Start at isometric offset from character start pos (0, 0, 7)
-  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(12, 18, 19), scene)
+  // ── Camera ── low angle for depth
+  const camera = new BABYLON.FreeCamera('cam', new BABYLON.Vector3(9, 12, 19), scene)
   camera.setTarget(new BABYLON.Vector3(0, 1, 7))
   camera.minZ = 0.1
+  camera.fov = 1.0
+
+  // ── Glow layer — warm torch glow ──
+  const glow = new BABYLON.GlowLayer('glow', scene)
+  glow.intensity = 0.8
+
+  // ── Post-processing: bloom + MSAA ──
+  const pipeline = new BABYLON.DefaultRenderingPipeline('pipeline', true, scene, [camera])
+  pipeline.samples = 4
+  pipeline.bloomEnabled = true
+  pipeline.bloomThreshold = 0.65
+  pipeline.bloomWeight = 0.5
+  pipeline.bloomKernel = 64
+  pipeline.bloomScale = 0.5
+
+  // ── Floating ember particles from torches ──
+  const PARTICLE_TEX = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAG0lEQVQoU2NkYGD4z8BAAoxqIKaBUQ2kBgIABbYAAfJFuNoAAAAASUVORK5CYII='
+  const embers = new BABYLON.ParticleSystem('embers', 60, scene)
+  embers.particleTexture = new BABYLON.Texture(PARTICLE_TEX, scene)
+  embers.emitter = new BABYLON.Vector3(0, 2.5, -2)
+  embers.minEmitBox = new BABYLON.Vector3(-3.5, 0, -9)
+  embers.maxEmitBox = new BABYLON.Vector3(3.5, 0, 4)
+  embers.color1 = new BABYLON.Color4(1, 0.5, 0.1, 0.9)
+  embers.color2 = new BABYLON.Color4(1, 0.85, 0.25, 0.7)
+  embers.colorDead = new BABYLON.Color4(0.4, 0.05, 0, 0)
+  embers.minSize = 0.04
+  embers.maxSize = 0.11
+  embers.minLifeTime = 2
+  embers.maxLifeTime = 4.5
+  embers.emitRate = 18
+  embers.direction1 = new BABYLON.Vector3(-0.4, 1.5, -0.4)
+  embers.direction2 = new BABYLON.Vector3(0.4, 3.5, 0.4)
+  embers.gravity = new BABYLON.Vector3(0, -0.8, 0)
+  embers.start()
 
   // ── Stars ──
   const stars = CASTLE_STARS.map((pos, i) =>
@@ -232,8 +265,8 @@ export function createCastleScene(engine, characterKey, callbacks) {
     }
     pos.y = 0
 
-    // Camera follow (isometric fixed angle)
-    const ISO_OFFSET = new BABYLON.Vector3(12, 18, 12)
+    // Camera follow — low angle for perspective depth
+    const ISO_OFFSET = new BABYLON.Vector3(9, 12, 12)
     camera.position = BABYLON.Vector3.Lerp(camera.position, pos.add(ISO_OFFSET), 0.07)
     camera.setTarget(BABYLON.Vector3.Lerp(
       camera.getTarget(), pos.add(new BABYLON.Vector3(0, 1, 0)), 0.1
