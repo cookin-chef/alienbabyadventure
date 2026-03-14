@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3a1a7e"/>
+      <stop offset="100%" stop-color="#1a0a3e"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="102" ry="102" fill="url(#bg)"/>
+
+  <!-- Stars -->
+  <circle cx="76.8" cy="102.4" r="7.68" fill="white" opacity="0.8"/>
+  <circle cx="409.6" cy="76.8" r="6.144" fill="white" opacity="0.7"/>
+  <circle cx="460.8" cy="358.4" r="5.12" fill="white" opacity="0.6"/>
+  <circle cx="51.2" cy="384" r="6.656" fill="white" opacity="0.7"/>
+  <circle cx="256" cy="40.96" r="7.68" fill="white" opacity="0.8"/>
+  <circle cx="358.4" cy="460.8" r="5.12" fill="white" opacity="0.5"/>
+
+  <!-- Mermaid tail -->
+  <ellipse cx="256" cy="368.64" rx="71.68" ry="87.04" fill="#00e5ff"/>
+  <polygon points="184.32,430.08 256,476.16 327.68,430.08" fill="#00acc1"/>
+
+  <!-- Dress -->
+  <ellipse cx="256" cy="291.84" rx="92.16" ry="71.68" fill="#388e3c"/>
+
+  <!-- Body -->
+  <ellipse cx="256" cy="225.28" rx="71.68" ry="66.56" fill="#66bb6a"/>
+
+  <!-- Head -->
+  <ellipse cx="256" cy="153.6" rx="81.92" ry="81.92" fill="#a5d6a7"/>
+
+  <!-- Wig -->
+  <ellipse cx="256" cy="102.4" rx="87.04" ry="51.2" fill="#d32f2f"/>
+  <ellipse cx="184.32" cy="81.92" rx="30.72" ry="51.2" fill="#c62828"/>
+  <ellipse cx="327.68" cy="81.92" rx="30.72" ry="51.2" fill="#c62828"/>
+
+  <!-- Eyes -->
+  <ellipse cx="225.28" cy="148.48" rx="28.16" ry="31.744" fill="white"/>
+  <ellipse cx="286.72" cy="148.48" rx="28.16" ry="31.744" fill="white"/>
+  <circle cx="225.28" cy="153.6" r="17.92" fill="#1a1a2e"/>
+  <circle cx="286.72" cy="153.6" r="17.92" fill="#1a1a2e"/>
+  <circle cx="232.96" cy="145.92" r="6.656" fill="white"/>
+  <circle cx="294.4" cy="145.92" r="6.656" fill="white"/>
+
+  <!-- Antennae -->
+  <line x1="225.28" y1="81.92" x2="194.56" y2="35.84" stroke="#81c784" stroke-width="7.68"/>
+  <line x1="286.72" y1="81.92" x2="317.44" y2="35.84" stroke="#81c784" stroke-width="7.68"/>
+  <circle cx="194.56" cy="35.84" r="12.8" fill="#ff80ab"/>
+  <circle cx="317.44" cy="35.84" r="12.8" fill="#ff80ab"/>
+
+  <!-- Ice sparkle -->
+  <text x="358.4" y="281.6" font-size="102.4" text-anchor="middle" opacity="0.9">❄</text>
+</svg>

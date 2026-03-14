@@ -1,0 +1,24 @@
+{
+  "name": "Alien Baby Adventure",
+  "short_name": "AlienBaby",
+  "description": "A magical mermaid alien baby adventure through a fantasy theme park world!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a0a3e",
+  "theme_color": "#1a0a3e",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
