@@ -1,39 +1,36 @@
-import React, { useEffect, useRef } from 'react'
-import { createGame } from './game/config'
+import React from 'react'
+import { useGameState } from './hooks/useGameState'
+import TitleScreen from './components/TitleScreen'
+import CharacterSelect from './components/CharacterSelect'
+import GameCanvas from './components/GameCanvas'
+import WinScreen from './components/WinScreen'
 
 export default function App() {
-  const containerRef = useRef(null)
-  const gameRef = useRef(null)
-
-  useEffect(() => {
-    if (containerRef.current && !gameRef.current) {
-      gameRef.current = createGame(containerRef.current)
-    }
-
-    return () => {
-      if (gameRef.current) {
-        gameRef.current.destroy(true)
-        gameRef.current = null
-      }
-    }
-  }, [])
+  const state = useGameState()
+  const { phase, fadeOut } = state
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#1a0a3e',
-        overflow: 'hidden',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        touchAction: 'none',
-      }}
-    />
+    <div style={{ width: '100%', height: '100%', position: 'relative', background: '#1a0a3e' }}>
+
+      {/* Babylon 3D canvas — mounted once, scenes swap internally */}
+      {(phase === 'outdoor' || phase === 'castle' || phase === 'bedroom') && (
+        <GameCanvas state={state} />
+      )}
+
+      {/* React UI screens */}
+      {phase === 'title' && <TitleScreen state={state} />}
+      {phase === 'charSelect' && <CharacterSelect state={state} />}
+      {phase === 'win' && <WinScreen state={state} />}
+
+      {/* Global fade overlay for transitions */}
+      <div style={{
+        position: 'fixed', inset: 0,
+        background: '#000',
+        opacity: fadeOut ? 1 : 0,
+        transition: 'opacity 0.5s ease',
+        pointerEvents: fadeOut ? 'all' : 'none',
+        zIndex: 9999,
+      }} />
+    </div>
   )
 }

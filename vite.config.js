@@ -5,16 +5,17 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks: {
-          phaser: ['phaser'],
+          babylon: ['@babylonjs/core', '@babylonjs/gui', '@babylonjs/materials'],
+          react: ['react', 'react-dom'],
         },
       },
     },
   },
-  server: {
-    port: 3000,
+  optimizeDeps: {
+    exclude: ['@babylonjs/core', '@babylonjs/gui', '@babylonjs/materials'],
   },
+  server: { port: 3000 },
 })
